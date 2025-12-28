@@ -1,1 +1,238 @@
+-- MODERNI LUA UI LIBRARY BY Gemini (Inspirace Twink/Kavo)
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 
+local Library = {}
+
+function Library.Load(TitleText)
+    local UI = Instance.new("ScreenGui")
+    UI.Name = TitleText
+    UI.Parent = CoreGui
+    UI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    -- HLAVNI KONTEJNER
+    local Main = Instance.new("Frame")
+    Main.Name = "Main"
+    Main.Parent = UI
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Ultra tmava
+    Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+    Main.Size = UDim2.new(0, 500, 0, 350)
+    Main.BorderSizePixel = 0
+    Main.ClipsDescendants = true
+
+    -- ZAOBRENI ROHU
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Main
+
+    -- MODERNI OKRAJ (GLOW/STROKE)
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Thickness = 1.5
+    Stroke.Color = Color3.fromRGB(45, 45, 45)
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Stroke.Parent = Main
+
+    -- LISTA (TITLE BAR)
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Name = "TitleBar"
+    TitleBar.Parent = Main
+    TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    TitleBar.Size = UDim2.new(1, 0, 0, 35)
+    TitleBar.BorderSizePixel = 0
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Parent = TitleBar
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.Size = UDim2.new(1, -50, 1, 0)
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextSize = 14
+    TitleLabel.Text = TitleText
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- ZOBACEK (MINIMIZE BUTTON)
+    local MinimizeBtn = Instance.new("ImageButton")
+    MinimizeBtn.Name = "Minimize"
+    MinimizeBtn.Parent = TitleBar
+    MinimizeBtn.BackgroundTransparency = 1
+    MinimizeBtn.Position = UDim2.new(1, -30, 0, 7)
+    MinimizeBtn.Size = UDim2.new(0, 20, 0, 20)
+    MinimizeBtn.Image = "rbxassetid://3926307971"
+    MinimizeBtn.ImageRectOffset = Vector2.new(324, 364)
+    MinimizeBtn.ImageRectSize = Vector2.new(36, 36)
+    MinimizeBtn.Rotation = 180 -- Smer nahoru (otevreno)
+
+    -- LEVY PANEL (MENU)
+    local Sidebar = Instance.new("ScrollingFrame")
+    Sidebar.Name = "Sidebar"
+    Sidebar.Parent = Main
+    Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    Sidebar.Position = UDim2.new(0, 5, 0, 40)
+    Sidebar.Size = UDim2.new(0, 130, 1, -45)
+    Sidebar.BorderSizePixel = 0
+    Sidebar.ScrollBarThickness = 0
+    Sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+    local SidebarCorner = Instance.new("UICorner")
+    SidebarCorner.CornerRadius = UDim.new(0, 8)
+    SidebarCorner.Parent = Sidebar
+
+    local SidebarLayout = Instance.new("UIListLayout")
+    SidebarLayout.Parent = Sidebar
+    SidebarLayout.Padding = UDim.new(0, 5)
+    SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local SidebarPadding = Instance.new("UIPadding")
+    SidebarPadding.Parent = Sidebar
+    SidebarPadding.PaddingTop = UDim.new(0, 5)
+
+    -- OBSAHOVA CAST (PAGES CONTAINER)
+    local Pages = Instance.new("Frame")
+    Pages.Name = "Pages"
+    Pages.Parent = Main
+    Pages.BackgroundTransparency = 1
+    Pages.Position = UDim2.new(0, 140, 0, 40)
+    Pages.Size = UDim2.new(1, -145, 1, -45)
+
+    -- DRAGGING LOGIC (Aby GUI slo posouvat)
+    local dragging, dragInput, dragStart, startPos
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = Main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
+
+    -- MINIMIZE LOGIC
+    local minimized = false
+    MinimizeBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        local targetSize = minimized and UDim2.new(0, 500, 0, 35) or UDim2.new(0, 500, 0, 350)
+        local targetRot = minimized and 0 or 180
+        
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = targetSize}):Play()
+        TweenService:Create(MinimizeBtn, TweenInfo.new(0.3), {Rotation = targetRot}):Play()
+    end)
+
+    -- API KNIHOVNY
+    local Tabs = {}
+    local FirstTab = true
+
+    function Tabs.AddPage(Name)
+        local TabBtn = Instance.new("TextButton")
+        TabBtn.Name = Name.."_Tab"
+        TabBtn.Parent = Sidebar
+        TabBtn.Size = UDim2.new(0.9, 0, 0, 30)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        TabBtn.Font = Enum.Font.GothamBold
+        TabBtn.Text = Name
+        TabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        TabBtn.TextSize = 12
+        TabBtn.AutoButtonColor = false
+
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+
+        -- SCROLLOVACI STRANKA
+        local Page = Instance.new("ScrollingFrame")
+        Page.Name = Name.."_Page"
+        Page.Parent = Pages
+        Page.BackgroundTransparency = 1
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.Visible = false
+        Page.ScrollBarThickness = 3
+        Page.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 60)
+        Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+        local PageLayout = Instance.new("UIListLayout")
+        PageLayout.Parent = Page
+        PageLayout.Padding = UDim.new(0, 8)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+        PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 10)
+        end)
+
+        Instance.new("UIPadding", Page).PaddingLeft = UDim.new(0, 5)
+
+        -- PREPINANI TABU
+        if FirstTab then
+            Page.Visible = true
+            TabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            FirstTab = false
+        end
+
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, v in pairs(Pages:GetChildren()) do v.Visible = false end
+            for _, v in pairs(Sidebar:GetChildren()) do 
+                if v:IsA("TextButton") then 
+                    TweenService:Create(v, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 25), TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
+                end 
+            end
+            Page.Visible = true
+            TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        end)
+
+        -- PRVKY NA STRANCE
+        local Elements = {}
+
+        function Elements.AddButton(Text, Callback)
+            local Btn = Instance.new("TextButton")
+            Btn.Parent = Page
+            Btn.Size = UDim2.new(0.95, 0, 0, 35)
+            Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            Btn.Font = Enum.Font.GothamBold
+            Btn.Text = "  "..Text
+            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Btn.TextSize = 13
+            Btn.TextXAlignment = Enum.TextXAlignment.Left
+            Btn.AutoButtonColor = false
+
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+            local BStroke = Instance.new("UIStroke", Btn)
+            BStroke.Color = Color3.fromRGB(50, 50, 50)
+            BStroke.Thickness = 1
+
+            Btn.MouseEnter:Connect(function()
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
+            end)
+            Btn.MouseLeave:Connect(function()
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+            end)
+            Btn.MouseButton1Click:Connect(Callback)
+        end
+
+        function Elements.AddLabel(Text)
+            local Label = Instance.new("TextLabel")
+            Label.Parent = Page
+            Label.Size = UDim2.new(0.95, 0, 0, 20)
+            Label.BackgroundTransparency = 1
+            Label.Font = Enum.Font.GothamBold
+            Label.TextColor3 = Color3.fromRGB(150, 150, 150)
+            Label.TextSize = 11
+            Label.Text = Text:upper()
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+        end
+
+        return Elements
+    end
+
+    return Tabs
+end
+
+return Library
